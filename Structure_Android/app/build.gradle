@@ -1,0 +1,134 @@
+apply plugin: 'com.android.application'
+apply plugin: 'com.neenbedankt.android-apt'
+apply plugin: 'realm-android'
+apply from: '../autodimension.gradle'
+
+/**
+ * start config and check ci*/
+apply from: '../checkci.gradle'
+
+def APP_ID = "com.fstyle.structure_android";
+
+android {
+  compileSdkVersion rootProject.ext.compileSdkVersion
+  buildToolsVersion rootProject.ext.buildToolsVersion
+
+  defaultConfig {
+    applicationId "${APP_ID}"
+    minSdkVersion rootProject.ext.minSdkVersion
+    targetSdkVersion rootProject.ext.targetSdkVersion
+    versionCode rootProject.ext.versionCode
+    versionName rootProject.ext.versionName
+
+    vectorDrawables.useSupportLibrary = true
+  }
+
+  dataBinding {
+    enabled = true
+  }
+
+  lintOptions {
+    abortOnError false
+  }
+
+  testOptions {
+    unitTests.returnDefaultValues = true
+  }
+
+  signingConfigs {
+    debug {}
+
+    release {
+
+      if (!System.getenv('CI')) {
+        def signFile = file("../local.properties")
+        def signingProps = new Properties()
+
+        signingProps.load(new FileInputStream(signFile))
+
+        storeFile file("../keystores/keystore_release.keystore")
+        storePassword signingProps['storePassword']
+        keyAlias signingProps['keyAlias']
+        keyPassword signingProps['keyPassword']
+      }
+    }
+  }
+
+  buildTypes {
+    debug {
+      versionNameSuffix = "debug"
+
+      applicationVariants.all { variant -> appendVersionNameVersionCode(variant)
+      }
+    }
+    mock {
+      versionNameSuffix = "mock"
+      applicationIdSuffix = ".mock"
+      signingConfig signingConfigs.debug
+
+      applicationVariants.all { variant -> appendVersionNameVersionCode(variant)
+      }
+    }
+    staging {
+      versionNameSuffix = "stg"
+      applicationIdSuffix = ".stg"
+      signingConfig signingConfigs.debug
+
+      applicationVariants.all { variant -> appendVersionNameVersionCode(variant)
+      }
+    }
+    release {
+      shrinkResources true
+      minifyEnabled true
+      signingConfig signingConfigs.release
+      proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+
+      applicationVariants.all { variant -> appendVersionNameVersionCode(variant)
+      }
+    }
+  }
+}
+
+@SuppressWarnings("GroovyAssignabilityCheck")
+def appendVersionNameVersionCode(variant) {
+  variant.outputs.each { output ->
+    def applicationId = variant.mergedFlavor.applicationId + (variant.buildType.applicationIdSuffix ==
+        null ? "" : variant.buildType.applicationIdSuffix)
+    if (variant.buildType.name == android.buildTypes.debug.name ||
+        variant.buildType.name ==
+        android.buildTypes.release.name ||
+        variant.buildType.name ==
+        android.buildTypes.staging.name) {
+      if (output.zipAlign) {
+        def file = output.outputFile
+        output.outputFile = new File(file.parentFile,
+            "${variant.buildType.name}_${applicationId}_v${variant.versionName}-${variant.versionCode}.apk")
+      }
+    }
+  }
+}
+
+dependencies {
+  compile fileTree(dir: 'libs', include: ['*.jar'])
+
+  Map<String, String> dependencies = rootProject.ext.dependencies;
+
+  compile dependencies.supportDesign
+  compile dependencies.constraintLayout
+  compile dependencies.dialog
+
+  compile dependencies.rxJava
+  compile dependencies.rxAndroid
+
+  compile dependencies.retrofit2
+  compile dependencies.retrofit2Adapter
+  compile dependencies.retrofitGson
+  compile dependencies.loggingInterceptor
+
+  testCompile dependencies.junit
+  testCompile dependencies.mockito
+
+  androidTestCompile('com.android.support.test.espresso:espresso-core:2.2.2', {
+    exclude group: 'com.android.support', module: 'support-annotations'
+  })
+}

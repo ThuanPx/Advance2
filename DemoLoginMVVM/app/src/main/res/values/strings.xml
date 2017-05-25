@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">DemoLoginMVVM</string>
+    <string name="facebook_app_id">300307587081707</string>
+</resources>

@@ -1,0 +1,5 @@
+<resources>
+    <string name="app_name">DemoLoginMVP</string>
+    <string name="title_activity_login_sussce">LoginSussce</string>
+    <string name="facebook_app_id">558896121165078</string>
+</resources>
